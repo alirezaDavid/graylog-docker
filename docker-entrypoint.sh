@@ -2,6 +2,12 @@
 
 set -e
 
+if ! whoami &> /dev/null; then
+  if [ -w /etc/passwd ]; then
+    echo "${GRAYLOG_USER:-default}:x:$(id -u):0:${GRAYLOG_USER:-default} user:${GRAYLOG_HOME}:/sbin/nologin" >> /etc/passwd
+  fi
+fi
+
 # save the settings over the docker(-compose) environment
 __GRAYLOG_SERVER_JAVA_OPTS=${GRAYLOG_SERVER_JAVA_OPTS}
 
@@ -45,11 +51,7 @@ setup() {
   for d in journal log plugin config contentpacks
   do
     dir=${GRAYLOG_HOME}/data/${d}
-    [[ -d "${dir}" ]] || mkdir -p "${dir}"
-    
-    if [[ "$(stat --format='%U:%G' $dir)" != 'graylog:graylog' ]] && [[ -w "$dir" ]]; then
-      chown -R graylog:graylog "$dir" || echo "Warning can not change owner to graylog:graylog"
-    fi
+    [[ -d "${dir}" ]] || mkdir -p "${dir}"    
   done
 }
 

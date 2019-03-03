@@ -60,9 +60,9 @@ ARG GRAYLOG_VERSION
 ARG BUILD_DATE
 ARG GRAYLOG_HOME=/usr/share/graylog
 ARG GRAYLOG_USER=graylog
-ARG GRAYLOG_UID=1100
-ARG GRAYLOG_GROUP=graylog
-ARG GRAYLOG_GID=1100
+ARG GRAYLOG_UID=1001
+ARG GRAYLOG_GROUP=root
+ARG GRAYLOG_GID=0
 
 # hadolint ignore=DL3023
 COPY --from=graylog-downloader /opt/graylog ${GRAYLOG_HOME}
@@ -89,20 +89,22 @@ RUN \
     libcap2-bin \
     libglib2.0-0 \
     fontconfig > /dev/null && \
-  addgroup \
-    --gid "${GRAYLOG_GID}" \
-    --quiet \
-    "${GRAYLOG_GROUP}" && \
-  adduser \
-    --disabled-password \
-    --disabled-login \
-    --gecos '' \
-    --home ${GRAYLOG_HOME} \
-    --uid "${GRAYLOG_UID}" \
-    --gid "${GRAYLOG_GID}" \
-    --quiet \
-    "${GRAYLOG_USER}" && \
-  chown --recursive "${GRAYLOG_USER}":"${GRAYLOG_GROUP}" ${GRAYLOG_HOME} && \
+  # addgroup \
+  #   --gid "${GRAYLOG_GID}" \
+  #   --quiet \
+  #   "${GRAYLOG_GROUP}" && \
+  # adduser \
+  #   --disabled-password \
+  #   --disabled-login \
+  #   --gecos '' \
+  #   --home ${GRAYLOG_HOME} \
+  #   --uid "${GRAYLOG_UID}" \
+  #   --gid "${GRAYLOG_GID}" \
+  #   --quiet \
+  #   "${GRAYLOG_USER}" && \
+  # chown --recursive "${GRAYLOG_USER}":"${GRAYLOG_GROUP}" ${GRAYLOG_HOME} && \
+  mkdir -p ${GRAYLOG_HOME}/data && \
+  chgrp -R 0 /tmp ${GRAYLOG_HOME} && chmod -R g=u /tmp ${GRAYLOG_HOME} && \
   setcap 'cap_net_bind_service=+ep' "${JAVA_HOME}/bin/java" && \
   apt-get remove --assume-yes --purge \
     apt-utils > /dev/null && \
@@ -119,20 +121,13 @@ RUN \
 
 
 COPY docker-entrypoint.sh /
-COPY health_check.sh /
 
 EXPOSE 9000
 USER ${GRAYLOG_USER}
-VOLUME ${GRAYLOG_HOME}/data
+# VOLUME ${GRAYLOG_HOME}/data
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["graylog"]
 
-# add healthcheck
-HEALTHCHECK \
-  --interval=10s \
-  --timeout=2s \
-  --retries=12 \
-  CMD /health_check.sh
 
 # -------------------------------------------------------------------------------------------------
 
